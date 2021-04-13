@@ -4742,6 +4742,25 @@ DEFINE_BUILTIN_OP_IMPORTER(TRT_AveragePool)
     return importAveragePool(ctx, node, inputs);
 }
 
+DEFINE_BUILTIN_OP_IMPORTER(Tanhshrink)
+{
+    nvinfer1::ITensor* tensor_ptr = &convertToTensor(inputs.at(0), ctx);
+    OnnxAttrs attrs(node, ctx);
+
+    // Populate instanceNormalization plugin properties.
+    const std::string pluginName = "Tanhshrink_TRT";
+    const std::string pluginVersion = "1";
+
+    std::vector<nvinfer1::PluginField> f;
+
+    // Create plugin from registry
+    nvinfer1::IPluginV2* plugin = createPlugin(node.name(), importPluginCreator(pluginName, pluginVersion), f);
+    ASSERT(plugin != nullptr && "Tanhshrink plugin was not found in the plugin registry!",
+           ErrorCode::kUNSUPPORTED_NODE);
+
+    RETURN_FIRST_OUTPUT(ctx->network()->addPluginV2(&tensor_ptr, 1, *plugin));
+}
+
 } // namespace
 
 } // namespace onnx2trt
